@@ -9,6 +9,7 @@ const hero = {
   velocityY: 0,
   gravity: 0.55,
   jumpStrength: 11,
+  jumpsUsed: 0,
 };
 const keys = new Set();
 
@@ -115,6 +116,7 @@ function updateHero(width, groundTop) {
     if (hero.y <= 0) {
       hero.y = 0;
       hero.velocityY = 0;
+      hero.jumpsUsed = 0;
     }
   }
 }
@@ -166,7 +168,10 @@ gameLoop();
 window.addEventListener("keydown", (event) => {
   if (event.key === " ") {
     event.preventDefault();
-    if (!event.repeat && hero.y === 0) hero.velocityY = hero.jumpStrength;
+    if (!event.repeat && hero.jumpsUsed < 2) {
+      hero.velocityY = hero.jumpStrength;
+      hero.jumpsUsed += 1;
+    }
     return;
   }
   if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;

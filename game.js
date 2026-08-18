@@ -55,7 +55,7 @@ function getPlatforms(width, height) {
       { x: width * 0.24, y: height * 0.62, width: 165, height: 16, gear: true },
       { x: width * 0.36, y: height * 0.56, width: 190, height: 16, gear: true },
       { x: width * 0.6, y: height * 0.42, width: 190, height: 16, gear: true },
-      { x: width * 0.72, y: height * 0.32, width: 160, height: 16, gear: true },
+      { x: width * 0.77, y: height * 0.32, width: 160, height: 16, gear: true },
     ];
   }
   return [

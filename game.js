@@ -193,13 +193,19 @@ function drawFlag(width, groundTop) {
   context.fill();
 }
 
-function checkWin(width) {
+function placeHeroAtLevel2Start(width, groundTop) {
+  const firstPlatform = getPlatforms(width, window.innerHeight)[0];
+  level2StartX = firstPlatform.x + firstPlatform.width / 2 - hero.width / 2;
+  hero.x = level2StartX;
+  hero.y = groundTop - firstPlatform.y;
+  hero.velocityY = 0;
+  hero.jumpsUsed = 0;
+}
+
+function checkWin(width, groundTop) {
   if (level === 1 && hero.x + hero.width >= width - 100) {
     level = 2;
-    hero.x = level2StartX;
-    hero.y = 0;
-    hero.velocityY = 0;
-    hero.jumpsUsed = 0;
+    placeHeroAtLevel2Start(width, groundTop);
     collectedCoins.clear();
     return;
   }
@@ -294,7 +300,7 @@ function updateHero(width, groundTop) {
   const direction = (keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0);
   hero.x = Math.max(0, Math.min(width - hero.width, hero.x + direction * hero.speed));
   collectCoins(width, groundTop);
-  checkWin(width);
+  checkWin(width, groundTop);
 
   if (level === 2) {
     const platforms = getPlatforms(width, window.innerHeight);
@@ -310,10 +316,7 @@ function updateHero(width, groundTop) {
       const touching = hero.x + hero.width > enemy.x && hero.x < enemy.x + 32 &&
         groundTop - hero.y > platform.y - 80 && groundTop - hero.y < platform.y + 25;
       if (touching) {
-        hero.x = level2StartX;
-        hero.y = 0;
-        hero.velocityY = 0;
-        hero.jumpsUsed = 0;
+        placeHeroAtLevel2Start(width, groundTop);
       }
     }
   }
@@ -447,10 +450,14 @@ canvas.addEventListener("click", (event) => {
     y >= playAgainButton.y && y <= playAgainButton.y + playAgainButton.height;
   if (!insideButton) return;
 
-  hero.x = 120;
-  hero.y = 0;
-  hero.velocityY = 0;
-  hero.jumpsUsed = 0;
+  if (level === 2) {
+    placeHeroAtLevel2Start(window.innerWidth, window.innerHeight - Math.max(120, window.innerHeight * 0.2));
+  } else {
+    hero.x = 120;
+    hero.y = 0;
+    hero.velocityY = 0;
+    hero.jumpsUsed = 0;
+  }
   collectedCoins.clear();
   score = 0;
   gameWon = false;

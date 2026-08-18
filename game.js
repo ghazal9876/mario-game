@@ -162,12 +162,13 @@ function drawLevel2Details(width, height, groundTop) {
 
 function drawLevel2Exit(width, groundTop) {
   const x = width - 58;
+  const exitBottom = groundTop - 120;
   context.fillStyle = "#72b9d6";
-  context.fillRect(x, groundTop - 82, 38, 82);
+  context.fillRect(x, exitBottom - 82, 38, 82);
   context.fillStyle = "#eafaff";
-  context.fillRect(x + 7, groundTop - 68, 24, 45);
+  context.fillRect(x + 7, exitBottom - 68, 24, 45);
   context.fillStyle = "#4387a6";
-  context.fillRect(x + 5, groundTop - 16, 28, 6);
+  context.fillRect(x + 5, exitBottom - 16, 28, 6);
 }
 
 function updateIceBalls(width, groundTop) {
@@ -181,14 +182,8 @@ function updateIceBalls(width, groundTop) {
     if (ball.y - ball.radius > groundTop) ball.y = -ball.radius;
     const heroCenterX = hero.x + hero.width / 2;
     const heroCenterY = groundTop - hero.y - hero.height / 2;
-    if (restartMessageTimer === 0 && Math.hypot(heroCenterX - ball.x, heroCenterY - ball.y) < ball.radius + 20) {
-      level2Lives -= 1;
-      if (level2Lives === 0) {
-        gameOver = true;
-      } else {
-        placeHeroAtLevel2Start(width, groundTop);
-        restartMessageTimer = 75;
-      }
+    if (Math.hypot(heroCenterX - ball.x, heroCenterY - ball.y) < ball.radius + 20) {
+      loseLevel2Life(width, groundTop);
     }
   }
 }
@@ -253,6 +248,17 @@ function placeHeroAtLevel2Start(width, groundTop) {
   hero.y = groundTop - firstPlatform.y;
   hero.velocityY = 0;
   hero.jumpsUsed = 0;
+}
+
+function loseLevel2Life(width, groundTop) {
+  if (restartMessageTimer > 0 || gameOver || gameWon) return;
+  level2Lives -= 1;
+  if (level2Lives === 0) {
+    gameOver = true;
+    return;
+  }
+  placeHeroAtLevel2Start(width, groundTop);
+  restartMessageTimer = 75;
 }
 
 function checkWin(width, groundTop) {
@@ -358,6 +364,7 @@ function updateHero(width, groundTop) {
   if (restartMessageTimer > 0) restartMessageTimer -= 1;
 
   const oldFoot = groundTop - hero.y;
+  const wasAirborne = hero.y > 0;
   if (hero.y > 0 || hero.velocityY > 0) {
     hero.velocityY -= hero.gravity;
     hero.y += hero.velocityY;
@@ -376,6 +383,10 @@ function updateHero(width, groundTop) {
     }
 
     if (hero.y <= 0) {
+      if (level === 2 && wasAirborne && hero.velocityY <= 0) {
+        loseLevel2Life(width, groundTop);
+        return;
+      }
       hero.y = 0;
       hero.velocityY = 0;
       hero.jumpsUsed = 0;

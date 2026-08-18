@@ -48,11 +48,11 @@ function drawCloud(x, y, scale = 1) {
 function getPlatforms(width, height) {
   if (level === 2) {
     return [
-      { x: width * 0.07, y: height * 0.56, width: 170, height: 16, gear: true },
-      { x: width * 0.24, y: height * 0.76, width: 165, height: 16, gear: true },
-      { x: width * 0.36, y: height * 0.68, width: 190, height: 16, gear: true },
-      { x: width * 0.66, y: height * 0.51, width: 190, height: 16, gear: true },
-      { x: width * 0.82, y: height * 0.37, width: 160, height: 16, gear: true },
+      { x: width * 0.07, y: height * 0.48, width: 170, height: 16, gear: true },
+      { x: width * 0.24, y: height * 0.62, width: 165, height: 16, gear: true },
+      { x: width * 0.36, y: height * 0.56, width: 190, height: 16, gear: true },
+      { x: width * 0.6, y: height * 0.42, width: 190, height: 16, gear: true },
+      { x: width * 0.72, y: height * 0.32, width: 160, height: 16, gear: true },
     ];
   }
   return [
@@ -107,7 +107,7 @@ function drawLevel2Details(width, height, groundTop) {
 
   for (const gear of getPlatforms(width, height)) {
     const gearX = gear.x + gear.width / 2;
-    const gearY = gear.y - 72;
+    const gearY = gear.y + 72;
     context.save();
     context.translate(gearX, gearY);
     context.fillStyle = "#b8e8f7";
@@ -129,6 +129,17 @@ function drawLevel2Details(width, height, groundTop) {
     context.arc(0, 0, 20, 0, Math.PI * 2);
     context.fill();
     context.restore();
+  }
+
+  // Horizontal main platforms resting on top of each gear wheel.
+  for (const gear of getPlatforms(width, height)) {
+    context.fillStyle = "#9edff3";
+    context.fillRect(gear.x, gear.y, gear.width, 12);
+    context.fillStyle = "#eafaff";
+    context.fillRect(gear.x, gear.y, gear.width, 4);
+    context.strokeStyle = "#4387a6";
+    context.lineWidth = 3;
+    context.strokeRect(gear.x, gear.y, gear.width, 12);
   }
 }
 

@@ -15,12 +15,15 @@ const keys = new Set();
 const collectedCoins = new Set();
 let score = 0;
 let gameWon = false;
+let restartMessageTimer = 0;
 let level = 1;
 let level2StartX = 55;
 const iceBalls = [
   { x: 0, y: 100, start: 0.3, speed: 2.2, radius: 20, initialized: false },
   { x: 0, y: 320, start: 0.58, speed: 2.8, radius: 20, initialized: false },
   { x: 0, y: 540, start: 0.82, speed: 2.4, radius: 20, initialized: false },
+  { x: 0, y: 210, start: 0.14, speed: 2.6, radius: 20, initialized: false },
+  { x: 0, y: 430, start: 0.7, speed: 2.1, radius: 20, initialized: false },
 ];
 const playAgainButton = { x: 0, y: 0, width: 170, height: 44 };
 
@@ -78,8 +81,8 @@ function getCoins(width, height) {
     return [
       { x: width * 0.25, y: height * 0.59 },
       { x: width * 0.49, y: height * 0.45 },
-      { x: width * 0.74, y: height * 0.32 },
-      { x: width * 0.86, y: height * 0.7 },
+      { x: width * 0.74, y: height * 0.38 },
+      { x: width * 0.86, y: height * 0.27 },
     ];
   }
   return [
@@ -166,6 +169,7 @@ function updateIceBalls(width, groundTop) {
     const heroCenterY = groundTop - hero.y - hero.height / 2;
     if (Math.hypot(heroCenterX - ball.x, heroCenterY - ball.y) < ball.radius + 20) {
       placeHeroAtLevel2Start(width, groundTop);
+      restartMessageTimer = 75;
     }
   }
 }
@@ -332,6 +336,7 @@ function updateHero(width, groundTop) {
   collectCoins(width, groundTop);
   checkWin(width, groundTop);
   updateIceBalls(width, groundTop);
+  if (restartMessageTimer > 0) restartMessageTimer -= 1;
 
   const oldFoot = groundTop - hero.y;
   if (hero.y > 0 || hero.velocityY > 0) {
@@ -421,6 +426,16 @@ function drawScene() {
     context.fillStyle = "#ffffff";
     context.font = "bold 18px sans-serif";
     context.fillText("PLAY AGAIN", width / 2, playAgainButton.y + 29);
+    context.textAlign = "start";
+  }
+
+  if (restartMessageTimer > 0 && !gameWon) {
+    context.fillStyle = "rgba(28, 35, 76, 0.82)";
+    context.fillRect(width / 2 - 150, height * 0.2 - 38, 300, 76);
+    context.fillStyle = "#ffffff";
+    context.font = "bold 34px sans-serif";
+    context.textAlign = "center";
+    context.fillText("RESTART", width / 2, height * 0.2 + 12);
     context.textAlign = "start";
   }
 }

@@ -62,7 +62,7 @@ function drawHero(x, groundTop) {
   // Short blonde hair behind the face.
   context.fillStyle = "#f1c44f";
   context.beginPath();
-  context.ellipse(center, footY - 62, 14, 17, 0, 0, Math.PI * 2);
+  context.ellipse(center, footY - 61, 15, 22, 0, 0, Math.PI * 2);
   context.fill();
 
   // Face and front hair.

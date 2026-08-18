@@ -8,7 +8,7 @@ const hero = {
   y: 0,
   velocityY: 0,
   gravity: 0.55,
-  jumpStrength: 11,
+  jumpStrength: 14,
   jumpsUsed: 0,
 };
 const keys = new Set();
@@ -32,6 +32,23 @@ function drawCloud(x, y, scale = 1) {
   context.fill();
   roundedRect(8, 28, 120, 34, 17);
   context.restore();
+}
+
+function getPlatforms(width, height) {
+  return [
+    { x: width * 0.18, y: height * 0.67, width: 190, height: 16 },
+    { x: width * 0.35, y: height * 0.58, width: 200, height: 16 },
+    { x: width * 0.52, y: height * 0.49, width: 190, height: 16 },
+  ];
+}
+
+function drawPlatforms(width, height) {
+  for (const platform of getPlatforms(width, height)) {
+    context.fillStyle = "#b96d3c";
+    context.fillRect(platform.x, platform.y, platform.width, platform.height);
+    context.fillStyle = "#e6a54f";
+    context.fillRect(platform.x, platform.y, platform.width, 6);
+  }
 }
 
 function drawHero(x, groundTop) {
@@ -110,9 +127,24 @@ function updateHero(width, groundTop) {
   const direction = (keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0);
   hero.x = Math.max(0, Math.min(width - hero.width, hero.x + direction * hero.speed));
 
+  const oldFoot = groundTop - hero.y;
   if (hero.y > 0 || hero.velocityY > 0) {
     hero.velocityY -= hero.gravity;
     hero.y += hero.velocityY;
+
+    const newFoot = groundTop - hero.y;
+    if (hero.velocityY <= 0) {
+      for (const platform of getPlatforms(width, window.innerHeight)) {
+        const overlaps = hero.x + hero.width > platform.x && hero.x < platform.x + platform.width;
+        if (overlaps && oldFoot <= platform.y && newFoot >= platform.y) {
+          hero.y = groundTop - platform.y;
+          hero.velocityY = 0;
+          hero.jumpsUsed = 0;
+          break;
+        }
+      }
+    }
+
     if (hero.y <= 0) {
       hero.y = 0;
       hero.velocityY = 0;
@@ -143,6 +175,8 @@ function drawScene() {
   drawCloud(width * 0.65, height * 0.1, 0.82);
   drawCloud(width * 0.42, height * 0.32, 0.65);
   drawCloud(width * 0.86, height * 0.4, 0.56);
+
+  drawPlatforms(width, height);
 
   // Solid ground strip along the bottom.
   const groundHeight = Math.max(120, height * 0.2);

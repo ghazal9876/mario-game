@@ -12,6 +12,8 @@ const hero = {
   jumpsUsed: 0,
 };
 const keys = new Set();
+const collectedCoins = new Set();
+let score = 0;
 
 function roundedRect(x, y, width, height, radius) {
   context.beginPath();
@@ -39,6 +41,7 @@ function getPlatforms(width, height) {
     { x: width * 0.18, y: height * 0.67, width: 190, height: 16 },
     { x: width * 0.35, y: height * 0.58, width: 200, height: 16 },
     { x: width * 0.52, y: height * 0.49, width: 190, height: 16 },
+    { x: width * 0.68, y: height * 0.4, width: 170, height: 16 },
   ];
 }
 
@@ -48,6 +51,43 @@ function drawPlatforms(width, height) {
     context.fillRect(platform.x, platform.y, platform.width, platform.height);
     context.fillStyle = "#e6a54f";
     context.fillRect(platform.x, platform.y, platform.width, 6);
+  }
+}
+
+function getCoins(width, height) {
+  return [
+    { x: width * 0.27, y: height * 0.61 },
+    { x: width * 0.45, y: height * 0.52 },
+    { x: width * 0.63, y: height * 0.43 },
+    { x: width * 0.76, y: height * 0.34 },
+    { x: width * 0.86, y: height * 0.7 },
+  ];
+}
+
+function drawCoins(width, height) {
+  for (const [index, coin] of getCoins(width, height).entries()) {
+    if (collectedCoins.has(index)) continue;
+    context.fillStyle = "#ffd447";
+    context.strokeStyle = "#c9871d";
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(coin.x, coin.y, 11, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "#fff1a3";
+    context.fillRect(coin.x - 3, coin.y - 7, 3, 8);
+  }
+}
+
+function collectCoins(width, groundTop) {
+  for (const [index, coin] of getCoins(width, window.innerHeight).entries()) {
+    if (collectedCoins.has(index)) continue;
+    const heroCenterX = hero.x + hero.width / 2;
+    const heroCenterY = groundTop - hero.y - hero.height / 2;
+    if (Math.hypot(heroCenterX - coin.x, heroCenterY - coin.y) < 30) {
+      collectedCoins.add(index);
+      score += 1;
+    }
   }
 }
 
@@ -126,6 +166,7 @@ function drawHero(x, groundTop) {
 function updateHero(width, groundTop) {
   const direction = (keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0);
   hero.x = Math.max(0, Math.min(width - hero.width, hero.x + direction * hero.speed));
+  collectCoins(width, groundTop);
 
   const oldFoot = groundTop - hero.y;
   if (hero.y > 0 || hero.velocityY > 0) {
@@ -177,6 +218,7 @@ function drawScene() {
   drawCloud(width * 0.86, height * 0.4, 0.56);
 
   drawPlatforms(width, height);
+  drawCoins(width, height);
 
   // Solid ground strip along the bottom.
   const groundHeight = Math.max(120, height * 0.2);
@@ -187,6 +229,12 @@ function drawScene() {
   context.fillRect(0, groundTop, width, 12);
   hero.x = Math.max(0, Math.min(width - hero.width, hero.x));
   drawHero(hero.x, groundTop - hero.y);
+  context.fillStyle = "#ffffff";
+  context.font = "bold 22px sans-serif";
+  context.shadowColor = "rgba(0, 0, 0, 0.25)";
+  context.shadowBlur = 4;
+  context.fillText(`Coins: ${score}`, 20, 34);
+  context.shadowBlur = 0;
 }
 
 drawScene();

@@ -15,6 +15,13 @@ const keys = new Set();
 const collectedCoins = new Set();
 let score = 0;
 let gameWon = false;
+let level = 1;
+let level2StartX = 55;
+const level2Enemies = [
+  { x: 0, start: 0.2, platform: 0, direction: 1, speed: 1.2, initialized: false },
+  { x: 0, start: 0.48, platform: 1, direction: -1, speed: 1, initialized: false },
+  { x: 0, start: 0.68, platform: 2, direction: 1, speed: 1.1, initialized: false },
+];
 const playAgainButton = { x: 0, y: 0, width: 170, height: 44 };
 
 function roundedRect(x, y, width, height, radius) {
@@ -39,6 +46,13 @@ function drawCloud(x, y, scale = 1) {
 }
 
 function getPlatforms(width, height) {
+  if (level === 2) {
+    return [
+      { x: width * 0.07, y: height * 0.56, width: 170, height: 16, gear: true },
+      { x: width * 0.36, y: height * 0.68, width: 190, height: 16, gear: true },
+      { x: width * 0.66, y: height * 0.51, width: 190, height: 16, gear: true },
+    ];
+  }
   return [
     { x: width * 0.18, y: height * 0.67, width: 190, height: 16 },
     { x: width * 0.35, y: height * 0.58, width: 200, height: 16 },
@@ -49,6 +63,7 @@ function getPlatforms(width, height) {
 
 function drawPlatforms(width, height) {
   for (const platform of getPlatforms(width, height)) {
+    if (platform.gear) continue;
     context.fillStyle = "#b96d3c";
     context.fillRect(platform.x, platform.y, platform.width, platform.height);
     context.fillStyle = "#e6a54f";
@@ -57,6 +72,14 @@ function drawPlatforms(width, height) {
 }
 
 function getCoins(width, height) {
+  if (level === 2) {
+    return [
+      { x: width * 0.25, y: height * 0.59 },
+      { x: width * 0.49, y: height * 0.45 },
+      { x: width * 0.74, y: height * 0.32 },
+      { x: width * 0.86, y: height * 0.7 },
+    ];
+  }
   return [
     { x: width * 0.27, y: height * 0.61 },
     { x: width * 0.45, y: height * 0.52 },
@@ -64,6 +87,74 @@ function getCoins(width, height) {
     { x: width * 0.76, y: height * 0.34 },
     { x: width * 0.86, y: height * 0.7 },
   ];
+}
+
+function drawLevel2Details(width, height, groundTop) {
+  // Ice-world ground from the sketch: a solid strip with pointed ice along its top.
+  context.fillStyle = "#d9f5ff";
+  context.fillRect(0, groundTop, width, height - groundTop);
+  context.fillStyle = "#8bd7f3";
+  for (let x = 0; x < width; x += 42) {
+    context.beginPath();
+    context.moveTo(x, groundTop);
+    context.lineTo(x + 21, groundTop + 32);
+    context.lineTo(x + 42, groundTop);
+    context.closePath();
+    context.fill();
+  }
+
+  for (const gear of getPlatforms(width, height)) {
+    const gearX = gear.x + gear.width / 2;
+    const gearY = gear.y - 72;
+    context.save();
+    context.translate(gearX, gearY);
+    context.fillStyle = "#b8e8f7";
+    context.strokeStyle = "#4387a6";
+    context.lineWidth = 5;
+    context.beginPath();
+    for (let i = 0; i < 24; i += 1) {
+      const angle = (i * Math.PI) / 12;
+      const radius = i % 2 ? 72 : 84;
+      const px = Math.cos(angle) * radius;
+      const py = Math.sin(angle) * radius;
+      if (i === 0) context.moveTo(px, py); else context.lineTo(px, py);
+    }
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.fillStyle = "#eafaff";
+    context.beginPath();
+    context.arc(0, 0, 20, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+}
+
+function drawLevel2Enemies(width, height) {
+  for (const enemy of level2Enemies) {
+    const platform = getPlatforms(width, height)[enemy.platform];
+    if (!platform) continue;
+    context.fillStyle = "#7d58a8";
+    context.beginPath();
+    context.arc(enemy.x + 16, platform.y - 13, 15, Math.PI, 0);
+    context.lineTo(enemy.x + 31, platform.y);
+    context.lineTo(enemy.x + 1, platform.y);
+    context.closePath();
+    context.fill();
+    context.fillStyle = "#ffffff";
+    context.fillRect(enemy.x + 8, platform.y - 12, 4, 4);
+    context.fillRect(enemy.x + 20, platform.y - 12, 4, 4);
+  }
+}
+
+function drawLevel2Exit(width, groundTop) {
+  const x = width - 58;
+  context.fillStyle = "#72b9d6";
+  context.fillRect(x, groundTop - 82, 38, 82);
+  context.fillStyle = "#eafaff";
+  context.fillRect(x + 7, groundTop - 68, 24, 45);
+  context.fillStyle = "#4387a6";
+  context.fillRect(x + 5, groundTop - 16, 28, 6);
 }
 
 function drawCoins(width, height) {
@@ -103,7 +194,16 @@ function drawFlag(width, groundTop) {
 }
 
 function checkWin(width) {
-  if (!gameWon && hero.x + hero.width >= width - 100) gameWon = true;
+  if (level === 1 && hero.x + hero.width >= width - 100) {
+    level = 2;
+    hero.x = level2StartX;
+    hero.y = 0;
+    hero.velocityY = 0;
+    hero.jumpsUsed = 0;
+    collectedCoins.clear();
+    return;
+  }
+  if (level === 2 && !gameWon && hero.x + hero.width >= width - 75) gameWon = true;
 }
 
 function collectCoins(width, groundTop) {
@@ -196,6 +296,28 @@ function updateHero(width, groundTop) {
   collectCoins(width, groundTop);
   checkWin(width);
 
+  if (level === 2) {
+    const platforms = getPlatforms(width, window.innerHeight);
+    for (const enemy of level2Enemies) {
+      const platform = platforms[enemy.platform];
+      if (!platform) continue;
+      if (!enemy.initialized) {
+        enemy.x = platform.x + platform.width * enemy.start;
+        enemy.initialized = true;
+      }
+      enemy.x += enemy.direction * enemy.speed;
+      if (enemy.x <= platform.x || enemy.x + 32 >= platform.x + platform.width) enemy.direction *= -1;
+      const touching = hero.x + hero.width > enemy.x && hero.x < enemy.x + 32 &&
+        groundTop - hero.y > platform.y - 80 && groundTop - hero.y < platform.y + 25;
+      if (touching) {
+        hero.x = level2StartX;
+        hero.y = 0;
+        hero.velocityY = 0;
+        hero.jumpsUsed = 0;
+      }
+    }
+  }
+
   const oldFoot = groundTop - hero.y;
   if (hero.y > 0 || hero.velocityY > 0) {
     hero.velocityY -= hero.gravity;
@@ -235,8 +357,8 @@ function drawScene() {
 
   // Sky gradient.
   const sky = context.createLinearGradient(0, 0, 0, height);
-  sky.addColorStop(0, "#51c9f1");
-  sky.addColorStop(0.72, "#a7e7f7");
+  sky.addColorStop(0, level === 2 ? "#b8ecff" : "#51c9f1");
+  sky.addColorStop(0.72, level === 2 ? "#e8fbff" : "#a7e7f7");
   sky.addColorStop(1, "#d5f4f6");
   context.fillStyle = sky;
   context.fillRect(0, 0, width, height);
@@ -252,9 +374,14 @@ function drawScene() {
   context.fillRect(0, groundTop, width, groundHeight);
   context.fillStyle = "#38923d";
   context.fillRect(0, groundTop, width, 12);
+  if (level === 2) drawLevel2Details(width, height, groundTop);
   drawPlatforms(width, height);
   drawCoins(width, height);
-  drawFlag(width, groundTop);
+  if (level === 1) drawFlag(width, groundTop);
+  if (level === 2) {
+    drawLevel2Enemies(width, height);
+    drawLevel2Exit(width, groundTop);
+  }
   hero.x = Math.max(0, Math.min(width - hero.width, hero.x));
   drawHero(hero.x, groundTop - hero.y);
   context.fillStyle = "#ffffff";

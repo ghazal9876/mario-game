@@ -14,6 +14,8 @@ const hero = {
 const keys = new Set();
 const collectedCoins = new Set();
 let score = 0;
+let gameWon = false;
+const playAgainButton = { x: 0, y: 0, width: 170, height: 44 };
 
 function roundedRect(x, y, width, height, radius) {
   context.beginPath();
@@ -77,6 +79,31 @@ function drawCoins(width, height) {
     context.fillStyle = "#fff1a3";
     context.fillRect(coin.x - 3, coin.y - 7, 3, 8);
   }
+}
+
+function drawFlag(width, groundTop) {
+  const flagX = width - 92;
+  context.strokeStyle = "#6d4935";
+  context.lineWidth = 6;
+  context.beginPath();
+  context.moveTo(flagX, groundTop);
+  context.lineTo(flagX, groundTop - 142);
+  context.stroke();
+  context.fillStyle = "#f2c94c";
+  context.beginPath();
+  context.arc(flagX, groundTop - 148, 7, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "#ed527d";
+  context.beginPath();
+  context.moveTo(flagX + 3, groundTop - 140);
+  context.lineTo(flagX + 62, groundTop - 119);
+  context.lineTo(flagX + 3, groundTop - 99);
+  context.closePath();
+  context.fill();
+}
+
+function checkWin(width) {
+  if (!gameWon && hero.x + hero.width >= width - 100) gameWon = true;
 }
 
 function collectCoins(width, groundTop) {
@@ -167,6 +194,7 @@ function updateHero(width, groundTop) {
   const direction = (keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0);
   hero.x = Math.max(0, Math.min(width - hero.width, hero.x + direction * hero.speed));
   collectCoins(width, groundTop);
+  checkWin(width);
 
   const oldFoot = groundTop - hero.y;
   if (hero.y > 0 || hero.velocityY > 0) {
@@ -198,6 +226,8 @@ function drawScene() {
   const width = window.innerWidth;
   const height = window.innerHeight;
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const groundHeight = Math.max(120, height * 0.2);
+  const groundTop = height - groundHeight;
 
   canvas.width = width * pixelRatio;
   canvas.height = height * pixelRatio;
@@ -217,16 +247,14 @@ function drawScene() {
   drawCloud(width * 0.42, height * 0.32, 0.65);
   drawCloud(width * 0.86, height * 0.4, 0.56);
 
-  drawPlatforms(width, height);
-  drawCoins(width, height);
-
   // Solid ground strip along the bottom.
-  const groundHeight = Math.max(120, height * 0.2);
-  const groundTop = height - groundHeight;
   context.fillStyle = "#57bd4f";
   context.fillRect(0, groundTop, width, groundHeight);
   context.fillStyle = "#38923d";
   context.fillRect(0, groundTop, width, 12);
+  drawPlatforms(width, height);
+  drawCoins(width, height);
+  drawFlag(width, groundTop);
   hero.x = Math.max(0, Math.min(width - hero.width, hero.x));
   drawHero(hero.x, groundTop - hero.y);
   context.fillStyle = "#ffffff";
@@ -235,6 +263,24 @@ function drawScene() {
   context.shadowBlur = 4;
   context.fillText(`Coins: ${score}`, 20, 34);
   context.shadowBlur = 0;
+
+  if (gameWon) {
+    context.fillStyle = "rgba(28, 35, 76, 0.8)";
+    context.fillRect(width / 2 - 210, height / 2 - 105, 420, 210);
+    context.fillStyle = "#ffe16b";
+    context.font = "bold 42px sans-serif";
+    context.textAlign = "center";
+    context.fillText("YOU WIN!", width / 2, height / 2 - 30);
+
+    playAgainButton.x = width / 2 - playAgainButton.width / 2;
+    playAgainButton.y = height / 2 + 15;
+    context.fillStyle = "#ed527d";
+    context.fillRect(playAgainButton.x, playAgainButton.y, playAgainButton.width, playAgainButton.height);
+    context.fillStyle = "#ffffff";
+    context.font = "bold 18px sans-serif";
+    context.fillText("PLAY AGAIN", width / 2, playAgainButton.y + 29);
+    context.textAlign = "start";
+  }
 }
 
 drawScene();
@@ -263,4 +309,22 @@ window.addEventListener("keydown", (event) => {
 
 window.addEventListener("keyup", (event) => {
   keys.delete(event.key);
+});
+
+canvas.addEventListener("click", (event) => {
+  if (!gameWon) return;
+  const bounds = canvas.getBoundingClientRect();
+  const x = event.clientX - bounds.left;
+  const y = event.clientY - bounds.top;
+  const insideButton = x >= playAgainButton.x && x <= playAgainButton.x + playAgainButton.width &&
+    y >= playAgainButton.y && y <= playAgainButton.y + playAgainButton.height;
+  if (!insideButton) return;
+
+  hero.x = 120;
+  hero.y = 0;
+  hero.velocityY = 0;
+  hero.jumpsUsed = 0;
+  collectedCoins.clear();
+  score = 0;
+  gameWon = false;
 });

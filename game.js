@@ -15,8 +15,10 @@ const keys = new Set();
 const collectedCoins = new Set();
 let score = 0;
 let gameWon = false;
+let gameOver = false;
 let restartMessageTimer = 0;
 let level = 1;
+let level2Lives = 3;
 let level2StartX = 55;
 const iceBalls = [
   { x: 0, y: 100, start: 0.3, speed: 2.2, radius: 20, initialized: false },
@@ -45,6 +47,18 @@ function drawCloud(x, y, scale = 1) {
   context.closePath();
   context.fill();
   roundedRect(8, 28, 120, 34, 17);
+  context.restore();
+}
+
+function drawHeart(x, y, size) {
+  context.save();
+  context.translate(x, y);
+  context.fillStyle = "#e53950";
+  context.beginPath();
+  context.moveTo(0, size * 0.82);
+  context.bezierCurveTo(-size * 1.15, size * 0.12, -size * 0.55, -size * 0.5, 0, -size * 0.05);
+  context.bezierCurveTo(size * 0.55, -size * 0.5, size * 1.15, size * 0.12, 0, size * 0.82);
+  context.fill();
   context.restore();
 }
 
@@ -167,9 +181,14 @@ function updateIceBalls(width, groundTop) {
     if (ball.y - ball.radius > groundTop) ball.y = -ball.radius;
     const heroCenterX = hero.x + hero.width / 2;
     const heroCenterY = groundTop - hero.y - hero.height / 2;
-    if (Math.hypot(heroCenterX - ball.x, heroCenterY - ball.y) < ball.radius + 20) {
-      placeHeroAtLevel2Start(width, groundTop);
-      restartMessageTimer = 75;
+    if (restartMessageTimer === 0 && Math.hypot(heroCenterX - ball.x, heroCenterY - ball.y) < ball.radius + 20) {
+      level2Lives -= 1;
+      if (level2Lives === 0) {
+        gameOver = true;
+      } else {
+        placeHeroAtLevel2Start(width, groundTop);
+        restartMessageTimer = 75;
+      }
     }
   }
 }
@@ -409,15 +428,23 @@ function drawScene() {
   context.shadowColor = "rgba(0, 0, 0, 0.25)";
   context.shadowBlur = 4;
   context.fillText(`Coins: ${score}`, 20, 34);
+  if (level === 2) {
+    const heartSize = 14;
+    const heartGap = 34;
+    const heartsStartX = width / 2 - ((level2Lives - 1) * heartGap) / 2;
+    for (let index = 0; index < level2Lives; index += 1) {
+      drawHeart(heartsStartX + index * heartGap, 28, heartSize);
+    }
+  }
   context.shadowBlur = 0;
 
-  if (gameWon) {
+  if (gameWon || gameOver) {
     context.fillStyle = "rgba(28, 35, 76, 0.8)";
     context.fillRect(width / 2 - 210, height / 2 - 105, 420, 210);
     context.fillStyle = "#ffe16b";
     context.font = "bold 42px sans-serif";
     context.textAlign = "center";
-    context.fillText("YOU WIN!", width / 2, height / 2 - 30);
+    context.fillText(gameWon ? "YOU WIN!" : "GAME OVER", width / 2, height / 2 - 30);
 
     playAgainButton.x = width / 2 - playAgainButton.width / 2;
     playAgainButton.y = height / 2 + 15;
@@ -469,7 +496,7 @@ window.addEventListener("keyup", (event) => {
 });
 
 canvas.addEventListener("click", (event) => {
-  if (!gameWon) return;
+  if (!gameWon && !gameOver) return;
   const bounds = canvas.getBoundingClientRect();
   const x = event.clientX - bounds.left;
   const y = event.clientY - bounds.top;
@@ -478,6 +505,7 @@ canvas.addEventListener("click", (event) => {
   if (!insideButton) return;
 
   if (level === 2) {
+    level2Lives = 3;
     placeHeroAtLevel2Start(window.innerWidth, window.innerHeight - Math.max(120, window.innerHeight * 0.2));
   } else {
     hero.x = 120;
@@ -488,4 +516,5 @@ canvas.addEventListener("click", (event) => {
   collectedCoins.clear();
   score = 0;
   gameWon = false;
+  gameOver = false;
 });

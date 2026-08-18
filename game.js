@@ -17,10 +17,10 @@ let score = 0;
 let gameWon = false;
 let level = 1;
 let level2StartX = 55;
-const level2Enemies = [
-  { x: 0, start: 0.2, platform: 0, direction: 1, speed: 1.2, initialized: false },
-  { x: 0, start: 0.48, platform: 1, direction: -1, speed: 1, initialized: false },
-  { x: 0, start: 0.68, platform: 2, direction: 1, speed: 1.1, initialized: false },
+const iceBalls = [
+  { x: 0, y: 100, start: 0.3, speed: 2.2, radius: 20, initialized: false },
+  { x: 0, y: 320, start: 0.58, speed: 2.8, radius: 20, initialized: false },
+  { x: 0, y: 540, start: 0.82, speed: 2.4, radius: 20, initialized: false },
 ];
 const playAgainButton = { x: 0, y: 0, width: 170, height: 44 };
 
@@ -49,8 +49,10 @@ function getPlatforms(width, height) {
   if (level === 2) {
     return [
       { x: width * 0.07, y: height * 0.56, width: 170, height: 16, gear: true },
+      { x: width * 0.24, y: height * 0.76, width: 165, height: 16, gear: true },
       { x: width * 0.36, y: height * 0.68, width: 190, height: 16, gear: true },
       { x: width * 0.66, y: height * 0.51, width: 190, height: 16, gear: true },
+      { x: width * 0.82, y: height * 0.37, width: 160, height: 16, gear: true },
     ];
   }
   return [
@@ -130,23 +132,6 @@ function drawLevel2Details(width, height, groundTop) {
   }
 }
 
-function drawLevel2Enemies(width, height) {
-  for (const enemy of level2Enemies) {
-    const platform = getPlatforms(width, height)[enemy.platform];
-    if (!platform) continue;
-    context.fillStyle = "#7d58a8";
-    context.beginPath();
-    context.arc(enemy.x + 16, platform.y - 13, 15, Math.PI, 0);
-    context.lineTo(enemy.x + 31, platform.y);
-    context.lineTo(enemy.x + 1, platform.y);
-    context.closePath();
-    context.fill();
-    context.fillStyle = "#ffffff";
-    context.fillRect(enemy.x + 8, platform.y - 12, 4, 4);
-    context.fillRect(enemy.x + 20, platform.y - 12, 4, 4);
-  }
-}
-
 function drawLevel2Exit(width, groundTop) {
   const x = width - 58;
   context.fillStyle = "#72b9d6";
@@ -155,6 +140,40 @@ function drawLevel2Exit(width, groundTop) {
   context.fillRect(x + 7, groundTop - 68, 24, 45);
   context.fillStyle = "#4387a6";
   context.fillRect(x + 5, groundTop - 16, 28, 6);
+}
+
+function updateIceBalls(width, groundTop) {
+  if (level !== 2) return;
+  for (const ball of iceBalls) {
+    if (!ball.initialized) {
+      ball.x = width * ball.start;
+      ball.initialized = true;
+    }
+    ball.y += ball.speed;
+    if (ball.y - ball.radius > groundTop) ball.y = -ball.radius;
+    const heroCenterX = hero.x + hero.width / 2;
+    const heroCenterY = groundTop - hero.y - hero.height / 2;
+    if (Math.hypot(heroCenterX - ball.x, heroCenterY - ball.y) < ball.radius + 20) {
+      placeHeroAtLevel2Start(width, groundTop);
+    }
+  }
+}
+
+function drawIceBalls() {
+  if (level !== 2) return;
+  for (const ball of iceBalls) {
+    context.fillStyle = "#75c9ed";
+    context.strokeStyle = "#2879aa";
+    context.lineWidth = 4;
+    context.beginPath();
+    context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "#eafaff";
+    context.beginPath();
+    context.arc(ball.x - 5, ball.y - 5, 4, 0, Math.PI * 2);
+    context.fill();
+  }
 }
 
 function drawCoins(width, height) {
@@ -301,25 +320,7 @@ function updateHero(width, groundTop) {
   hero.x = Math.max(0, Math.min(width - hero.width, hero.x + direction * hero.speed));
   collectCoins(width, groundTop);
   checkWin(width, groundTop);
-
-  if (level === 2) {
-    const platforms = getPlatforms(width, window.innerHeight);
-    for (const enemy of level2Enemies) {
-      const platform = platforms[enemy.platform];
-      if (!platform) continue;
-      if (!enemy.initialized) {
-        enemy.x = platform.x + platform.width * enemy.start;
-        enemy.initialized = true;
-      }
-      enemy.x += enemy.direction * enemy.speed;
-      if (enemy.x <= platform.x || enemy.x + 32 >= platform.x + platform.width) enemy.direction *= -1;
-      const touching = hero.x + hero.width > enemy.x && hero.x < enemy.x + 32 &&
-        groundTop - hero.y > platform.y - 80 && groundTop - hero.y < platform.y + 25;
-      if (touching) {
-        placeHeroAtLevel2Start(width, groundTop);
-      }
-    }
-  }
+  updateIceBalls(width, groundTop);
 
   const oldFoot = groundTop - hero.y;
   if (hero.y > 0 || hero.velocityY > 0) {
@@ -382,7 +383,7 @@ function drawScene() {
   drawCoins(width, height);
   if (level === 1) drawFlag(width, groundTop);
   if (level === 2) {
-    drawLevel2Enemies(width, height);
+    drawIceBalls();
     drawLevel2Exit(width, groundTop);
   }
   hero.x = Math.max(0, Math.min(width - hero.width, hero.x));
